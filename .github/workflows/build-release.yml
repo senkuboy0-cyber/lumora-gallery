@@ -1,4 +1,4 @@
-name: Build & Release Lumora APKs
+name: Android Multi-ABI APK Build & Release
 
 on:
   push:
@@ -10,128 +10,72 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build APKs for all architectures
+  build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        abi:
+          - arm64-v8a
+          - armeabi-v7a
+          - x86
+          - x86_64
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Generate version tag
-        id: tag
-        run: |
-          TAG="v1.0.$(git rev-list --count HEAD)"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Generated tag: $TAG"
-
-      - name: Set up JDK 21
+      - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          java-version: 21
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Grant Gradle execute permission
+      - name: Grant Gradle Permission
         run: chmod +x gradlew
 
-      - name: Setup Gradle 9.4.1
-        uses: gradle/actions/setup-gradle@v4
+      - name: Build Debug APK
+        run: |
+          ./gradlew assembleDebug \
+          -Pandroid.injected.build.abi=${{ matrix.abi }}
+
+      - name: Rename APK
+        run: |
+          mkdir -p output
+
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+
+          cp "$APK_PATH" "output/LumoraGallery-${{ matrix.abi }}-debug.apk"
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          gradle-version: '9.4.1'
+          name: LumoraGallery-${{ matrix.abi }}
+          path: output/*.apk
 
-      - name: Build arm64-v8a APK
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download All APKs
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate Tag
+        id: tag
         run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=arm64-v8a --stacktrace
-          echo "=== Debug: Looking for APK ==="
-          find . -name '*.apk' -type f 2>/dev/null
-          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
-          if [ -n "$APK_FILE" ]; then
-            cp "$APK_FILE" Lumora-arm64-v8a.apk
-            echo "Copied: $APK_FILE -> Lumora-arm64-v8a.apk"
-          else
-            echo "ERROR: No APK found for arm64-v8a"
-            exit 1
-          fi
+          echo "tag=v$(date +'%Y.%m.%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: Build armeabi-v7a APK
-        run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=armeabi-v7a --stacktrace
-          echo "=== Debug: Looking for APK ==="
-          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
-          if [ -n "$APK_FILE" ]; then
-            cp "$APK_FILE" Lumora-armeabi-v7a.apk
-            echo "Copied: $APK_FILE -> Lumora-armeabi-v7a.apk"
-          else
-            echo "ERROR: No APK found for armeabi-v7a"
-            exit 1
-          fi
-
-      - name: Build x86 APK
-        run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=x86 --stacktrace
-          echo "=== Debug: Looking for APK ==="
-          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
-          if [ -n "$APK_FILE" ]; then
-            cp "$APK_FILE" Lumora-x86.apk
-            echo "Copied: $APK_FILE -> Lumora-x86.apk"
-          else
-            echo "ERROR: No APK found for x86"
-            exit 1
-          fi
-
-      - name: Build x86_64 APK
-        run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=x86_64 --stacktrace
-          echo "=== Debug: Looking for APK ==="
-          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
-          if [ -n "$APK_FILE" ]; then
-            cp "$APK_FILE" Lumora-x86_64.apk
-            echo "Copied: $APK_FILE -> Lumora-x86_64.apk"
-          else
-            echo "ERROR: No APK found for x86_64"
-            exit 1
-          fi
-
-      - name: Verify APK outputs
-        run: ls -lh Lumora-*.apk
-
-      - name: Create tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.tag.outputs.tag }}
-          git push origin ${{ steps.tag.outputs.tag }}
-
-      - name: Create GitHub Release with APKs
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Lumora ${{ steps.tag.outputs.tag }}"
-          body: |
-            ## Lumora ${{ steps.tag.outputs.tag }}
-
-            | APK | Device |
-            |-----|--------|
-            | `Lumora-arm64-v8a.apk` | Modern phones — Recommended |
-            | `Lumora-armeabi-v7a.apk` | Older phones (32-bit) |
-            | `Lumora-x86.apk` | Emulator (32-bit) |
-            | `Lumora-x86_64.apk` | Emulator (64-bit) |
-
-            ### Installation:
-            1. Download the correct APK
-            2. Enable "Install from unknown sources"
-            3. Install and enjoy!
-          draft: false
-          prerelease: false
-          files: |
-            Lumora-arm64-v8a.apk
-            Lumora-armeabi-v7a.apk
-            Lumora-x86.apk
-            Lumora-x86_64.apk
+          name: Lumora Gallery Build ${{ steps.tag.outputs.tag }}
+          files: artifacts/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
