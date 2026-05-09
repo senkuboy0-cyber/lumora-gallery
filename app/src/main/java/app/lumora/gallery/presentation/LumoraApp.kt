@@ -42,6 +42,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -364,6 +365,7 @@ private fun BottomPill(state: LumoraUiState, viewModel: LumoraViewModel, onMore:
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MoreSheet(onDismiss: () -> Unit, viewModel: LumoraViewModel) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Background) {
@@ -400,6 +402,7 @@ private fun PermissionCard(icon: ImageVector, title: String, body: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AiPrompt(onDownload: () -> Unit, onSkip: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onSkip, containerColor = Background) {
