@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Lumora.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/lumora_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_lumora_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Lumora</item>
+    </style>
+    <style name="Theme.Lumora" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+</resources>
