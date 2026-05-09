@@ -2,6 +2,8 @@ name: Build & Release Lumora APKs
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -37,53 +39,54 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
 
-      - name: Build arm64-v8a APK (Modern phones - 64-bit)
+      - name: Build arm64-v8a APK
         run: |
           ./gradlew assembleRelease -Pandroid.injected.build.abi=arm64-v8a
-          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-arm64-v8a.apk
+          cp app/build/outputs/apk/release/*.apk Lumora-arm64-v8a.apk
 
-      - name: Build armeabi-v7a APK (Old phones - 32-bit)
+      - name: Build armeabi-v7a APK
         run: |
           ./gradlew assembleRelease -Pandroid.injected.build.abi=armeabi-v7a
-          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-armeabi-v7a.apk
+          cp app/build/outputs/apk/release/*.apk Lumora-armeabi-v7a.apk
 
-      - name: Build x86 APK (Emulator - 32-bit)
+      - name: Build x86 APK
         run: |
           ./gradlew assembleRelease -Pandroid.injected.build.abi=x86
-          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-x86.apk
+          cp app/build/outputs/apk/release/*.apk Lumora-x86.apk
 
-      - name: Build x86_64 APK (Emulator - 64-bit)
+      - name: Build x86_64 APK
         run: |
           ./gradlew assembleRelease -Pandroid.injected.build.abi=x86_64
-          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-x86_64.apk
+          cp app/build/outputs/apk/release/*.apk Lumora-x86_64.apk
+
+      - name: Upload APKs as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lumora-APKs
+          path: |
+            Lumora-arm64-v8a.apk
+            Lumora-armeabi-v7a.apk
+            Lumora-x86.apk
+            Lumora-x86_64.apk
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
           name: "Lumora ${{ github.ref_name }}"
           body: |
             ## Lumora ${{ github.ref_name }}
 
-            ### Download the correct APK for your device:
-
-            | APK File | Device Type |
-            |----------|-------------|
-            | `Lumora-arm64-v8a.apk` | Modern phones - Recommended |
+            | APK | Device |
+            |-----|--------|
+            | `Lumora-arm64-v8a.apk` | Modern phones — Recommended |
             | `Lumora-armeabi-v7a.apk` | Older phones (32-bit) |
             | `Lumora-x86.apk` | Emulator (32-bit) |
             | `Lumora-x86_64.apk` | Emulator (64-bit) |
-
-            ### Installation:
-            1. Download `Lumora-arm64-v8a.apk` for most devices
-            2. Enable "Install from unknown sources" in Settings
-            3. Open the APK and install
           files: |
             Lumora-arm64-v8a.apk
             Lumora-armeabi-v7a.apk
             Lumora-x86.apk
             Lumora-x86_64.apk
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
