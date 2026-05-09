@@ -40,41 +40,25 @@ jobs:
       - name: Build arm64-v8a APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=arm64-v8a
-          echo "=== Build outputs ==="
-          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
-          ls -la app/build/outputs/apk/release/ 2>/dev/null || echo "Release dir not found"
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-arm64-v8a.apk \; || true
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-arm64-v8a.apk \; -quit
 
       - name: Build armeabi-v7a APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=armeabi-v7a
-          echo "=== Build outputs ==="
-          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-armeabi-v7a.apk \; || true
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-armeabi-v7a.apk \; -quit
 
       - name: Build x86 APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=x86
-          echo "=== Build outputs ==="
-          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86.apk \; || true
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86.apk \; -quit
 
       - name: Build x86_64 APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=x86_64
-          echo "=== Build outputs ==="
-          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86_64.apk \; || true
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86_64.apk \; -quit
 
       - name: Verify APK outputs
-        run: |
-          echo "=== Final APK check ==="
-          ls -la Lumora-*.apk 2>/dev/null || echo "No APKs found"
-          for apk in Lumora-*.apk; do
-            if [ -f "$apk" ]; then
-              echo "$apk: $(ls -lh "$apk" | awk '{print $5}')"
-            fi
-          done
+        run: ls -lh Lumora-*.apk
 
       - name: Upload APKs as artifacts
         uses: actions/upload-artifact@v4
@@ -83,37 +67,46 @@ jobs:
           path: Lumora-*.apk
 
   release:
-    name: Publish GitHub release
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Download APK artifacts
+      - name: Download APKs
         uses: actions/download-artifact@v4
         with:
           name: Lumora-APKs
-          path: release-assets
+          path: .
 
-      - name: Verify downloaded APKs
-        run: find release-assets -name '*.apk' -print -ls
+      - name: Display downloaded files
+        run: ls -lh Lumora-*.apk
 
-      - name: Create GitHub Release
+      - name: Create Release with APK files
         uses: softprops/action-gh-release@v2
         with:
           name: "Lumora ${{ github.ref_name }}"
           body: |
             ## Lumora ${{ github.ref_name }}
-            | APK | Device |
-            |-----|--------|
-            | `Lumora-arm64-v8a.apk` | Modern phones - Recommended |
-            | `Lumora-armeabi-v7a.apk` | Older phones (32-bit) |
-            | `Lumora-x86.apk` | Emulator (32-bit) |
-            | `Lumora-x86_64.apk` | Emulator (64-bit) |
+
+            ### Download APK for your device:
+            | APK | Architecture | Use Case |
+            |-----|--------------|----------|
+            | `Lumora-arm64-v8a.apk` | arm64-v8a | Modern phones (Recommended) |
+            | `Lumora-armeabi-v7a.apk` | armeabi-v7a | Older phones (32-bit) |
+            | `Lumora-x86.apk` | x86 | Emulator (32-bit) |
+            | `Lumora-x86_64.apk` | x86_64 | Emulator (64-bit) |
+
+            ### Installation:
+            1. Download the correct APK for your device
+            2. Enable "Install from unknown sources"
+            3. Install and enjoy!
+          draft: true
+          prerelease: false
           files: |
-            release-assets/**/Lumora-arm64-v8a.apk
-            release-assets/**/Lumora-armeabi-v7a.apk
-            release-assets/**/Lumora-x86.apk
-            release-assets/**/Lumora-x86_64.apk
+            Lumora-arm64-v8a.apk
+            Lumora-armeabi-v7a.apk
+            Lumora-x86.apk
+            Lumora-x86_64.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
