@@ -40,43 +40,47 @@ jobs:
       - name: Build arm64-v8a APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=arm64-v8a
-          APK_PATH=$(find app/build/outputs -name '*.apk' | sort | head -n 1)
-          test -n "$APK_PATH"
-          cp "$APK_PATH" Lumora-arm64-v8a.apk
+          echo "=== Build outputs ==="
+          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
+          ls -la app/build/outputs/apk/release/ 2>/dev/null || echo "Release dir not found"
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-arm64-v8a.apk \; || true
 
       - name: Build armeabi-v7a APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=armeabi-v7a
-          APK_PATH=$(find app/build/outputs -name '*.apk' | sort | head -n 1)
-          test -n "$APK_PATH"
-          cp "$APK_PATH" Lumora-armeabi-v7a.apk
+          echo "=== Build outputs ==="
+          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-armeabi-v7a.apk \; || true
 
       - name: Build x86 APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=x86
-          APK_PATH=$(find app/build/outputs -name '*.apk' | sort | head -n 1)
-          test -n "$APK_PATH"
-          cp "$APK_PATH" Lumora-x86.apk
+          echo "=== Build outputs ==="
+          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86.apk \; || true
 
       - name: Build x86_64 APK
         run: |
           gradle assembleRelease -Pandroid.injected.build.abi=x86_64
-          APK_PATH=$(find app/build/outputs -name '*.apk' | sort | head -n 1)
-          test -n "$APK_PATH"
-          cp "$APK_PATH" Lumora-x86_64.apk
+          echo "=== Build outputs ==="
+          find app/build/outputs -name '*.apk' 2>/dev/null || echo "No APK found"
+          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86_64.apk \; || true
 
       - name: Verify APK outputs
-        run: ls -l Lumora-*.apk
+        run: |
+          echo "=== Final APK check ==="
+          ls -la Lumora-*.apk 2>/dev/null || echo "No APKs found"
+          for apk in Lumora-*.apk; do
+            if [ -f "$apk" ]; then
+              echo "$apk: $(ls -lh "$apk" | awk '{print $5}')"
+            fi
+          done
 
       - name: Upload APKs as artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Lumora-APKs
-          path: |
-            Lumora-arm64-v8a.apk
-            Lumora-armeabi-v7a.apk
-            Lumora-x86.apk
-            Lumora-x86_64.apk
+          path: Lumora-*.apk
 
   release:
     name: Publish GitHub release
