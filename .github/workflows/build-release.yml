@@ -46,23 +46,56 @@ jobs:
 
       - name: Build arm64-v8a APK
         run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=arm64-v8a
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-arm64-v8a.apk \; -quit
+          gradle assembleRelease -Pandroid.injected.build.abi=arm64-v8a --stacktrace
+          echo "=== Debug: Looking for APK ==="
+          find . -name '*.apk' -type f 2>/dev/null
+          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
+          if [ -n "$APK_FILE" ]; then
+            cp "$APK_FILE" Lumora-arm64-v8a.apk
+            echo "Copied: $APK_FILE -> Lumora-arm64-v8a.apk"
+          else
+            echo "ERROR: No APK found for arm64-v8a"
+            exit 1
+          fi
 
       - name: Build armeabi-v7a APK
         run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=armeabi-v7a
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-armeabi-v7a.apk \; -quit
+          gradle assembleRelease -Pandroid.injected.build.abi=armeabi-v7a --stacktrace
+          echo "=== Debug: Looking for APK ==="
+          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
+          if [ -n "$APK_FILE" ]; then
+            cp "$APK_FILE" Lumora-armeabi-v7a.apk
+            echo "Copied: $APK_FILE -> Lumora-armeabi-v7a.apk"
+          else
+            echo "ERROR: No APK found for armeabi-v7a"
+            exit 1
+          fi
 
       - name: Build x86 APK
         run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=x86
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86.apk \; -quit
+          gradle assembleRelease -Pandroid.injected.build.abi=x86 --stacktrace
+          echo "=== Debug: Looking for APK ==="
+          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
+          if [ -n "$APK_FILE" ]; then
+            cp "$APK_FILE" Lumora-x86.apk
+            echo "Copied: $APK_FILE -> Lumora-x86.apk"
+          else
+            echo "ERROR: No APK found for x86"
+            exit 1
+          fi
 
       - name: Build x86_64 APK
         run: |
-          gradle assembleRelease -Pandroid.injected.build.abi=x86_64
-          find app/build/outputs -name '*.apk' -exec cp {} Lumora-x86_64.apk \; -quit
+          gradle assembleRelease -Pandroid.injected.build.abi=x86_64 --stacktrace
+          echo "=== Debug: Looking for APK ==="
+          APK_FILE=$(find app/build/outputs/apk -name '*.apk' -type f 2>/dev/null | head -1)
+          if [ -n "$APK_FILE" ]; then
+            cp "$APK_FILE" Lumora-x86_64.apk
+            echo "Copied: $APK_FILE -> Lumora-x86_64.apk"
+          else
+            echo "ERROR: No APK found for x86_64"
+            exit 1
+          fi
 
       - name: Verify APK outputs
         run: ls -lh Lumora-*.apk
