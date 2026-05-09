@@ -1,0 +1,89 @@
+name: Build & Release Lumora APKs
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APKs for all architectures
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Gradle execute permission
+        run: chmod +x gradlew
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Build arm64-v8a APK (Modern phones - 64-bit)
+        run: |
+          ./gradlew assembleRelease -Pandroid.injected.build.abi=arm64-v8a
+          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-arm64-v8a.apk
+
+      - name: Build armeabi-v7a APK (Old phones - 32-bit)
+        run: |
+          ./gradlew assembleRelease -Pandroid.injected.build.abi=armeabi-v7a
+          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-armeabi-v7a.apk
+
+      - name: Build x86 APK (Emulator - 32-bit)
+        run: |
+          ./gradlew assembleRelease -Pandroid.injected.build.abi=x86
+          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-x86.apk
+
+      - name: Build x86_64 APK (Emulator - 64-bit)
+        run: |
+          ./gradlew assembleRelease -Pandroid.injected.build.abi=x86_64
+          mv app/build/outputs/apk/release/app-release-unsigned.apk Lumora-x86_64.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Lumora ${{ github.ref_name }}"
+          body: |
+            ## Lumora ${{ github.ref_name }}
+
+            ### Download the correct APK for your device:
+
+            | APK File | Device Type |
+            |----------|-------------|
+            | `Lumora-arm64-v8a.apk` | Modern phones - Recommended |
+            | `Lumora-armeabi-v7a.apk` | Older phones (32-bit) |
+            | `Lumora-x86.apk` | Emulator (32-bit) |
+            | `Lumora-x86_64.apk` | Emulator (64-bit) |
+
+            ### Installation:
+            1. Download `Lumora-arm64-v8a.apk` for most devices
+            2. Enable "Install from unknown sources" in Settings
+            3. Open the APK and install
+          files: |
+            Lumora-arm64-v8a.apk
+            Lumora-armeabi-v7a.apk
+            Lumora-x86.apk
+            Lumora-x86_64.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
