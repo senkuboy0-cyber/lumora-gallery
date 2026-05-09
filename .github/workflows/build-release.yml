@@ -92,7 +92,7 @@ jobs:
           path: release-assets
 
       - name: Verify downloaded APKs
-        run: ls -l release-assets
+        run: find release-assets -name '*.apk' -print -ls
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -107,9 +107,9 @@ jobs:
             | `Lumora-x86.apk` | Emulator (32-bit) |
             | `Lumora-x86_64.apk` | Emulator (64-bit) |
           files: |
-            release-assets/Lumora-arm64-v8a.apk
-            release-assets/Lumora-armeabi-v7a.apk
-            release-assets/Lumora-x86.apk
-            release-assets/Lumora-x86_64.apk
+            release-assets/**/Lumora-arm64-v8a.apk
+            release-assets/**/Lumora-armeabi-v7a.apk
+            release-assets/**/Lumora-x86.apk
+            release-assets/**/Lumora-x86_64.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
